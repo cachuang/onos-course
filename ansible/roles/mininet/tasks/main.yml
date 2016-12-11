@@ -1,0 +1,22 @@
+---
+- name: apt-get update upgrade
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+    upgrade: dist
+  become: yes
+
+- name: Install git
+  apt: name=git
+  become: yes
+
+- name: Clone Mininet
+  git: repo={{ mininet_repo }} dest={{ mininet_root }}
+
+- name: Install Mininet
+  shell: util/install.sh -a
+  args:
+    chdir: /home/{{ ansible_user }}/mininet
+  register: install_mininet
+  failed_when: "'Enjoy Mininet!' not in install_mininet.stdout"  
+  become: yes

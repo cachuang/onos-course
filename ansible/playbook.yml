@@ -1,0 +1,10 @@
+---
+- name: Ansible Practice
+  hosts: remote
+  remote_user: onos
+  roles:
+#    - onos
+#    - mininet
+#    - ovs
+#    - run
+     - docker

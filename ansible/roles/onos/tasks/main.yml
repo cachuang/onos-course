@@ -1,0 +1,66 @@
+---
+- name: apt-get update upgrade
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+    upgrade: dist
+  become: yes
+
+- name: Add Java repository 
+  apt_repository: repo='ppa:webupd8team/java'
+  become: yes
+
+- name: Auto accept Java license
+  debconf: name='oracle-java8-installer' question='shared/accepted-oracle-license-v1-1' value='true' vtype='select'
+  become: yes
+
+- name: Install Java 8
+  apt: name={{ item }} state=latest
+  with_items:
+    - oracle-java8-installer
+    - oracle-java8-set-default
+  become: yes 
+
+- name: Set Java environment variable  
+  lineinfile:
+    line: "export JAVA_HOME={{ java_home }}"
+    dest: ~/.bashrc
+
+- name: Install git
+  apt: name=git 
+  become: yes
+
+- name: Create Downloads and Application Directory 
+  file: path={{ item }} state=directory
+  with_items:
+    - ~/Downloads
+    - ~/Applications
+
+- name: Download Karaf and Maven
+  get_url: url={{ item.url }} dest={{ item.dest }}
+  with_items:
+    - { url: "{{ karaf_url }}", dest: "~/Downloads/apache-karaf-{{ karaf_version }}.tar.gz" }
+    - { url: "{{ maven_url }}", dest: "~/Downloads/apache-maven-{{ maven_version }}-bin.tar.gz" }
+
+- name: Unarchive Karaf and Maven
+  unarchive: src=~/Downloads/{{ item }} dest=~/Applications remote_src=yes
+  with_items:
+    - apache-karaf-{{ karaf_version }}.tar.gz
+    - apache-maven-{{ maven_version }}-bin.tar.gz
+
+- name: Clone ONOS
+  git: repo={{ onos_repo }} dest={{ onos_root }} 
+
+- name: Set ONOS environment variable
+  lineinfile: line={{ item }} dest=~/.bashrc
+  with_items:
+    - "export ONOS_ROOT={{ onos_root }}" 
+    - "source $ONOS_ROOT/tools/dev/bash_profile" 
+
+- name: Build ONOS
+  shell: source {{ onos_root }}/tools/dev/bash_profile; onos-buck build onos
+  args:
+    chdir: "{{ onos_root }}"
+    executable: /bin/bash
+  register: build_onos
+  failed_when: "'FINISHED' not in build_onos.stderr"

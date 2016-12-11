@@ -1,0 +1,16 @@
+---
+java_home: "/usr/lib/jvm/java-8-oracle"
+
+karaf_version: 3.0.5
+maven_version: 3.3.9
+karaf_url: "http://archive.apache.org/dist/karaf/3.0.5/apache-karaf-3.0.5.tar.gz"
+maven_url: "http://archive.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz"
+
+onos_repo: "https://github.com/opennetworkinglab/onos.git"
+onos_root: "~/onos"
+
+mininet_repo: "https://github.com/mininet/mininet.git"
+mininet_root: "~/mininet"
+
+ovs_version: 2.6.1
+ovs_url: "http://openvswitch.org/releases/openvswitch-2.6.1.tar.gz"

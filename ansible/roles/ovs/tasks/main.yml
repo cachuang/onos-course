@@ -1,0 +1,66 @@
+---
+- name: Install Dependencies
+  apt: name={{ item }} state=latest
+  with_items:
+    - dh-autoreconf
+    - libssl-dev
+    - openssl
+  become: yes
+
+- name: Download OpenvSwitch
+  get_url:
+    url: "{{ ovs_url }}"
+    dest: ~/Downloads/openvswitch-{{ ovs_version }}.tar.gz
+
+- name: Unarchive openvswitch
+  unarchive: src=~/Downloads/openvswitch-{{ ovs_version }}.tar.gz dest=~ remote_src=yes
+
+- name: Install OpenvSwitch
+  shell: "{{ item }}" 
+  with_items:
+    - "./boot.sh"
+    - "./configure --with-linux=/lib/modules/`uname -r`/build"
+    - "make -j && make install"
+    - "make modules_install" 
+  args:
+    chdir: /home/{{ ansible_user }}/openvswitch-{{ ovs_version }}
+  become: yes
+
+- name: Load module
+  shell: modprobe "{{ item }}"
+  with_items:
+    - gre
+    - openvswitch
+    - libcrc32c
+  become: yes
+
+- name: Configure database
+  shell: ovsdb-tool create /usr/local/etc/openvswitch/conf.db /usr/local/share/openvswitch/vswitch.ovsschema
+  become: yes
+
+- name: Start ovsdb-server
+  shell: ovsdb-server --remote=punix:/usr/local/var/run/openvswitch/db.sock \ 
+         --remote=db:Open_vSwitch,Open_vSwitch,manager_options \ 
+         --private-key=db:Open_vSwitch,SSL,private_key \ 
+         --certificate=db:Open_vSwitch,SSL,certificate \
+         --bootstrap-ca-cert=db:Open_vSwitch,SSL,ca_cert \
+         --pidfile --detach --log-file
+  become: yes
+
+- name: Initial database
+  shell: ovs-vsctl --no-wait init
+  become: yes
+
+- name: Start OpenvSwitch daemon
+  shell: ovs-vswitchd --pidfile --detach --log-file
+  become: yes
+
+- name: Copy OpenvSwitch init script
+  copy: src=openvswitch dest=/etc/init.d/openvswitch mode=a+x
+  become: yes
+  tags: start
+
+- name: Install OpenvSwitch init script 
+  shell: update-rc.d -f openvswitch defaults
+  become: yes
+  tags: start

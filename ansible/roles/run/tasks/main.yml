@@ -1,0 +1,23 @@
+---
+- name: Copy ONOS cell
+  copy: src=test dest=~/onos/tools/test/cells/test
+
+- name: Install tmux
+  apt: name=tmux state=latest
+  become: yes
+
+- name: touch known_hosts
+  file: path=~/.ssh/known_hosts state=touch
+
+- name: Run ONOS
+  shell: source /home/onos/onos/tools/dev/bash_profile; tmux new -d -s onos "onos-buck run onos-local clean"
+  args:
+    chdir: ~/onos
+    executable: /bin/bash
+  environment:
+    ONOS_ROOT: '/home/onos/onos'
+    JAVA_HOME: '/usr/lib/jvm/java-8-oracle'
+
+- name: Run mininet
+  shell: tmux new -d -s mininet "mn --controller=remote,ip=127.0.0.1,port=6653 --topo=tree,depth=2"
+  become: yes
