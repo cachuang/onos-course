@@ -1,0 +1,59 @@
+---
+- name: Install docker
+  apt: name=docker.io 
+  become: yes
+
+- name: Install ssh tools
+  apt: name=sshpass
+  become: yes
+
+- name: Add user to docker group
+  user: name={{ ansible_user }} groups=docker append=yes 
+  become: yes
+
+- name: Create docker directory
+  file: path=~/docker state=directory
+
+- name: Copy dockerfile
+  copy: src=Dockerfile dest=~/docker/Dockerfile
+
+- name: Build docker image
+  shell: docker build -t onos/ubuntu . 
+  args:
+    chdir: ~/docker
+
+- name: Run container
+  shell: for i in `seq {{ container_count }}`; do docker run -td onos/ubuntu; done
+
+- name: Get container IP
+  shell: docker inspect -f '{{ '{{' }} .NetworkSettings.IPAddress {{ '}}' }}' `docker ps -aq`
+  register: docker_ip
+
+- name: Copy ONOS cell
+  copy: src=docker dest=~/onos/tools/test/cells/docker
+
+- name: Set ONOS cell
+  lineinfile: 
+    line: 'export OC{{ item.0 + 1 }}="{{ item.1 }}"'
+    dest: ~/onos/tools/test/cells/docker
+  with_indexed_items: "{{ docker_ip.stdout_lines }}"
+
+- name: Get container's public key
+  shell: ssh-keyscan {{ item }} >> ~/.ssh/known_hosts
+  with_items: "{{ docker_ip.stdout_lines }}"
+
+- stat: path=~/.ssh/id_rsa
+  register: public_key
+
+- name: Create public key
+  shell: ssh-keygen -f $HOME/.ssh/id_rsa -t rsa -N ''
+  when: not public_key.stat.exists
+
+- name: Copy ssh public key to container
+  shell: sshpass -p {{ onos_user }} ssh-copy-id {{ onos_user }}@{{ item }}
+  with_items: "{{ docker_ip.stdout_lines }}"
+
+#- name: Stc setup
+#  shell: source /home/onos/onos/tools/dev/bash_profile; cell docker; stc setup
+#  args:
+#    shell: /bin/bash

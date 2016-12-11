@@ -1,0 +1,4 @@
+ONOS_USER=sdn
+ONOS_WEB_USER=onos
+ONOS_WEB_PASS=rocks
+export ONOS_APPS="drivers,openflow,fwd,proxyarp,mobility"

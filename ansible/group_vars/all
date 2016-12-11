@@ -8,9 +8,12 @@ maven_url: "http://archive.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-m
 
 onos_repo: "https://github.com/opennetworkinglab/onos.git"
 onos_root: "~/onos"
+onos_user: "sdn"
 
 mininet_repo: "https://github.com/mininet/mininet.git"
 mininet_root: "~/mininet"
 
 ovs_version: 2.6.1
 ovs_url: "http://openvswitch.org/releases/openvswitch-2.6.1.tar.gz"
+
+container_count: 3
